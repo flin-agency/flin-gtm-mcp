@@ -6,6 +6,12 @@ import requests
 from flin_gtm_mcp.client import CONTAINER, GTMClient, GTMError
 
 
+@pytest.fixture(autouse=True)
+def no_real_wait(monkeypatch):
+    monkeypatch.setattr("flin_gtm_mcp.client.LIMITER.wait", lambda: None)
+    monkeypatch.setattr("flin_gtm_mcp.client.time.sleep", lambda seconds: None)
+
+
 def session(status=200, data=None):
     response = Mock(status_code=status)
     response.json.return_value = data if data is not None else {}

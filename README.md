@@ -4,7 +4,7 @@ Read-only Google Tag Manager MCP server for Claude Desktop and other stdio MCP c
 
 ## Install in Claude Desktop on macOS
 
-1. Download `flin-gtm-mcp-0.1.0-macos.mcpb` from
+1. Use the locally built `dist/flin-gtm-mcp-0.2.0-macos.mcpb`, or download an available release from
    [GitHub Releases](https://github.com/flin-agency/flin-gtm-mcp/releases).
 2. Open the bundle with a current Claude Desktop version supporting MCPB v0.4 / uv extensions.
 3. Select your Google **Desktop app** OAuth credentials JSON in the extension settings.
@@ -20,15 +20,55 @@ See [Claude setup and Google credentials](docs/claude-desktop.md).
 
 ## Features
 
-20 tools: authentication status/login; lists of accounts, containers, workspaces, tags,
-triggers, variables, folders, built-in variables and version headers; individual
-accounts, containers, workspaces, tags, triggers, variables, folders and versions;
-and the published container version. Lists return one page with `next_page_token`.
+34 tools cover authentication, accounts, containers, workspaces, tags, triggers,
+variables, folders, built-ins, version headers and versions, plus:
+
+- Public-ID lookup, workspace status and paginated folder contents.
+- Custom templates, Google tag configs, server-side clients and transformations.
+- Published/saved version snapshots, paginated snapshot details, dependency analysis
+  and structured version comparisons.
+- Three guided prompts (`audit_container`, `best_practices_review`,
+  `generate_tracking_plan`) and resources for conventions, accounts, live snapshots
+  and workspace collections.
 
 Google access uses only `https://www.googleapis.com/auth/tagmanager.readonly`.
-All GTM API operations use an explicit GET allowlist. No editing, deleting,
-importing, publishing, preview creation or version creation. Login writes a local
-token cache, but never changes GTM configuration.
+An explicit method/path allowlist permits GET reads and exactly one read-only POST:
+folder contents. No editing, deleting, importing, publishing, preview creation or
+version creation. Login writes a local token cache, never GTM configuration.
+
+### Audit workflow and response changes in 0.2
+
+1. Resolve public IDs with `gtm_lookup_container(tag_id="GTM-...")`.
+2. Call `gtm_get_live_version(parent="accounts/123/containers/456")`.
+3. Use its `snapshot_id` with `gtm_read_snapshot`, selecting an entity `kind` and
+   following `next_offset`. Set `full=true` for parameters or template source.
+4. Run `gtm_analyze_dependencies(snapshot_id=...)` for structural candidates.
+5. Fetch another version using `gtm_get_version`, then compare the two snapshot IDs
+   using `gtm_diff_versions`. Follow `next_offset` for all changes.
+
+**Version tools now return snapshot metadata and counts**, rather than the entire
+raw container. All ten entity kinds remain accessible through `gtm_read_snapshot`.
+Lists, folder contents and workspace status default to compact responses that omit
+`parameter` and `templateData` with explicit `_omitted_fields`; `full=true` opts in.
+Individual entity get tools return full details. Existing list pagination parameters
+still work. List tools (except accounts) and folder contents optionally read up to
+five pages with `max_pages`; always follow `next_page_token` until null.
+
+Snapshots are memory-only, scoped to the current local credentials, reusable for
+60 seconds and readable for five minutes. Use `refresh=true` on version tools to
+check Google again. The cache holds at most eight snapshots / 32 MiB; expiration,
+eviction or a changed login requires a new fetch. Cached data reflects fetch time,
+not necessarily the current published configuration.
+
+Requests are spaced by 4.05 seconds across this server process, with at most three
+attempts for transient failures. Permission and daily-quota errors are not retried.
+Other processes/apps sharing a Google project still share its quota. Multi-page
+calls and retries can take longer than a single request; client timeouts must allow
+for this. Explicit `full=true` responses can be large.
+
+Workspace status is relative to its **base version**, not necessarily live.
+Dependency findings are static candidates, not deletion advice. Consent settings
+alone cannot certify compliance or actual runtime behaviour. No tag code is executed.
 
 ## Python installation
 

@@ -24,6 +24,7 @@ def build():
             "README.md",
             "docs/claude-desktop.md",
             "docs/read-only-contract.md",
+            "docs/release-notes.md",
         )
     ]
     files += sorted((ROOT / "src/flin_gtm_mcp").glob("*.py"))

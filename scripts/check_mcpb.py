@@ -33,10 +33,10 @@ async def check():
         )
         async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
             await session.initialize()
-            assert len((await session.list_tools()).tools) == 20
+            assert len((await session.list_tools()).tools) == 34
             result = await session.call_tool("gtm_auth_status", {})
             assert not result.isError
-    print("Archived MCPB: isolated uv launch, handshake and 20 tools verified.")
+    print("Archived MCPB: isolated uv launch, handshake and 34 tools verified.")
 
 
 if __name__ == "__main__":

@@ -1,10 +1,24 @@
-Initial read-only Google Tag Manager MCP release.
+# 0.2.0 — Read-only audits and snapshots
 
-- 20 MCP tools for Google authentication and reading GTM configuration.
-- Claude Desktop macOS extension (`.mcpb`, MCPB v0.4 / uv runtime).
-- Python wheel and source distribution for the maintainer's PyPI upload.
-- GET-only allowlist, read-only Google scope, pagination and sanitized errors.
+- 34 tools, including public-ID lookup, workspace status, folder contents, templates,
+  Google tag configs, server-side clients and transformations.
+- Complete version snapshots with credential-bound, bounded memory caching,
+  paginated detail reads, dependency candidates and structured version diffs.
+- Process-wide throttling, selective bounded retries and optional multi-page reads.
+- Compact list/status responses, three audit/documentation prompts and four resource
+  registrations (two fixed resources and two URI templates).
+- Strict readonly OAuth and method/path allowlist; the only POST reads folder contents.
 
-Install: download and open the macOS `.mcpb` in a current Claude Desktop with uv extension support. Select your Google Desktop OAuth client JSON, then ask Claude to authenticate. Python and dependencies are installed on first use; network access is required.
+Migration: version tools now return snapshot IDs and counts. Use
+`gtm_read_snapshot` for entities and `full=true` for parameters/template source.
+Lists retain continuation tokens and default to compact output. Individual entity
+get tools still return full data. Workspace status describes base-version changes.
 
-The extension is unsigned. Protocol, unit and packaging checks are automated. Live Google OAuth/API access and installation through Claude's UI have not been verified with user credentials. PyPI publication is handled separately by the maintainer.
+Install the generated macOS `.mcpb` in a Claude Desktop version supporting MCPB
+v0.4 / uv extensions, then select your Google Desktop OAuth JSON. Dependencies need
+internet on first launch. The extension is unsigned. Live OAuth/API reads and
+installation through Claude's UI require a separate authorized-account check.
+
+# 0.1.0
+
+Initial release with 20 read-only authentication and GTM configuration tools.
