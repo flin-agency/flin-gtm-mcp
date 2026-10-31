@@ -1,0 +1,26 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.10.11'
+      - run: uv sync --frozen --extra dev
+      - run: uv run ruff check .
+      - run: uv run pytest
+      - run: uv build
+      - run: uv run twine check dist/*.whl dist/*.tar.gz
+      - run: uv run python scripts/build_mcpb.py
+      - run: uv run python scripts/check_mcpb.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npx --yes @anthropic-ai/mcpb@2.1.2 validate manifest.json

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flin-gtm-mcp"
+version = "0.1.0"
+description = "Read-only Google Tag Manager MCP server by flin"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{name = "flin agency"}]
+dependencies = ["mcp>=1.20,<2", "google-auth-oauthlib>=1.2,<2", "requests>=2.32,<3"]
+
+[project.urls]
+Repository = "https://github.com/flin-agency/flin-gtm-mcp"
+Issues = "https://github.com/flin-agency/flin-gtm-mcp/issues"
+
+[project.scripts]
+flin-gtm-mcp = "flin_gtm_mcp.__main__:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.9", "build>=1.2", "twine>=6"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flin_gtm_mcp"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100

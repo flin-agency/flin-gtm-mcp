@@ -1,0 +1,31 @@
+{
+  "manifest_version": "0.4",
+  "name": "flin-gtm-mcp",
+  "display_name": "flin Google Tag Manager",
+  "version": "0.1.0",
+  "description": "Read-only Google Tag Manager: inspect accounts, containers, tags, triggers and versions.",
+  "author": {"name": "flin agency"},
+  "repository": {"type": "git", "url": "https://github.com/flin-agency/flin-gtm-mcp"},
+  "support": "https://github.com/flin-agency/flin-gtm-mcp/issues",
+  "privacy_policies": ["https://policies.google.com/privacy"],
+  "server": {
+    "type": "uv",
+    "entry_point": "server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": ["run", "--frozen", "--directory", "${__dirname}", "server.py"],
+      "env": {"FLIN_GTM_CREDENTIALS_FILE": "${user_config.credentials_file}"}
+    }
+  },
+  "compatibility": {"platforms": ["darwin"], "runtimes": {"python": ">=3.11"}},
+  "tools_generated": true,
+  "keywords": ["google-tag-manager", "gtm", "read-only", "flin"],
+  "user_config": {
+    "credentials_file": {
+      "type": "file",
+      "title": "Google OAuth credentials JSON",
+      "description": "Select your Google Cloud Desktop app OAuth JSON (or service-account JSON). Enable Tag Manager API first.",
+      "required": true
+    }
+  }
+}
