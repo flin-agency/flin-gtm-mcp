@@ -61,21 +61,28 @@ npx --yes @anthropic-ai/mcpb validate manifest.json
 
 The MCPB builder includes only explicit project files, never `.env`, local credentials,
 tokens, virtual environments or Git metadata. SHA-256 accompanies the bundle.
-CI runs tests and builds on macOS and Linux. The manual GitHub Release workflow
-publishes wheel, source distribution and MCPB; it does not upload to PyPI.
+CI runs tests and builds on macOS and Linux. The manual GitHub Release workflow (`github-release.yml`) publishes wheel, source
+distribution and MCPB. The separate PyPI workflow (`release.yml`) publishes the
+existing release distributions using PyPI Trusted Publishing.
 
-## PyPI release (maintainer)
+## PyPI release
 
-You own the PyPI publication. Download the wheel and source archive from the GitHub
-release, then upload them with your own PyPI credentials:
+Configure a Trusted Publisher in PyPI with:
 
-```sh
-python3 -m pip install twine
-python3 -m twine check flin_gtm_mcp-0.1.0*
-python3 -m twine upload flin_gtm_mcp-0.1.0-py3-none-any.whl flin_gtm_mcp-0.1.0.tar.gz
-```
+- Project: `flin-gtm-mcp`
+- Owner: `flin-agency`
+- Repository: `flin-gtm-mcp`
+- Workflow: `release.yml`
+- Environment: `pypi`
 
-After publication, installation via `pip install flin-gtm-mcp` becomes available.
+For the first publication, register a pending publisher at
+https://pypi.org/manage/account/publishing/ while signed in to the intended owner account.
+Then run **Actions → Publish release to PyPI → Run workflow** on `main`, with the
+existing release tag (for example `v0.1.0`). No stored API token is needed.
+The workflow validates the package name, version and metadata before uploading
+only the wheel and source archive. It never uploads the Claude bundle to PyPI.
+
+After successful publication: `pip install flin-gtm-mcp`.
 
 ## Privacy and limits
 
