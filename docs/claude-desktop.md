@@ -6,8 +6,9 @@
 2. Configure Google Auth Platform / OAuth consent. For an external app in Testing,
    add your Google account as a test user. Follow Google's current verification
    requirements if distributing your OAuth app beyond permitted test users.
-3. Create an OAuth client of type **Desktop app** and download its JSON file.
-4. Keep the file outside this repository. Choose it in the Claude extension settings.
+3. Create an OAuth client of type **Desktop app**. Copy its client ID and client secret.
+4. Enter them in the extension settings under **OAuth client ID** and **OAuth client secret**.
+   No JSON download is necessary. The secret field is marked sensitive for Claude secure storage.
 5. Use `gtm_authenticate` in Claude to open browser consent. The login waits up to
    120 seconds. If Claude times out first, use the CLI login below and retry.
 
@@ -17,12 +18,12 @@ created automatically. Google OAuth apps in Testing may require frequent re-logi
 
 ## Install the MCPB
 
-Download [flin-gtm-mcp-0.2.2-macos.mcpb](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.2/flin-gtm-mcp-0.2.2-macos.mcpb).
+Download [flin-gtm-mcp-0.2.3-macos.mcpb](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.3/flin-gtm-mcp-0.2.3-macos.mcpb).
 In Claude Desktop, open **Settings → Desktop app → Extensions → Manage →
 Advanced settings → Install Extension…** (older layout: **Settings → Extensions**).
 Select the downloaded file. Approve installation and
-select the credentials JSON. Claude manages Python with uv. On every server start it checks PyPI for the newest
-stable flin-gtm-mcp version and updates its isolated environment. Internet is required.
+enter the OAuth client ID and client secret. Claude manages Python with uv. On every
+server start it checks PyPI for the newest stable flin-gtm-mcp version and updates its isolated environment. Internet is required.
 New code becomes active after the next server/Claude restart. Credentials stay in
 the same location; a normal server update does not require reauthentication.
 
@@ -34,11 +35,15 @@ Then: “Zeige Tags und Trigger im Workspace …; ändere nichts.”
 
 ## Automatic updates and one-time migration
 
-Install 0.2.2 once if you currently have a bundle up to 0.2.1; old bundles execute
-fixed local source. From 0.2.2 onward, ordinary server updates come from PyPI at
-startup, without reinstalling the extension. No hot replacement happens during a
-running conversation. The extension's displayed version stays at the launcher
-version; `gtm_auth_status` reports the active `server_version`.
+Install 0.2.3 once to add the two OAuth input fields. This is an extension-settings
+change, so an existing 0.2.2 installation needs the new MCPB for the new form. Its
+JSON-based login continues to work through automatic server updates. Bundles up to
+0.2.1 execute fixed local source and also need a new bundle.
+
+Ordinary server updates still come from PyPI at startup without reinstalling the
+extension. No hot replacement happens during a running conversation. The extension's
+displayed version stays at the launcher version; `gtm_auth_status` reports the active
+`server_version`. Reusing the same OAuth client ID keeps the existing token cache.
 
 Changes to the extension manifest, settings or launcher can still require a new
 MCPB. Custom side-loaded extension metadata does not itself update from PyPI.
@@ -52,7 +57,9 @@ From the checked-out repository:
 
 ```sh
 uv sync --frozen
-FLIN_GTM_CREDENTIALS_FILE="/absolute/path/google-oauth.json" uv run flin-gtm-mcp login
+export FLIN_GTM_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+export FLIN_GTM_CLIENT_SECRET="your-client-secret"
+uv run flin-gtm-mcp login
 ```
 
 For manual Claude configuration, add the following server to the existing
@@ -66,7 +73,8 @@ Replace all paths with your actual absolute paths. Preserve existing servers.
       "command": "/absolute/path/to/uv",
       "args": ["run", "--frozen", "--directory", "/absolute/path/to/flin-gtm-mcp", "flin-gtm-mcp"],
       "env": {
-        "FLIN_GTM_CREDENTIALS_FILE": "/absolute/path/google-oauth.json"
+        "FLIN_GTM_CLIENT_ID": "your-client-id.apps.googleusercontent.com",
+        "FLIN_GTM_CLIENT_SECRET": "your-client-secret"
       }
     }
   }
@@ -74,6 +82,10 @@ Replace all paths with your actual absolute paths. Preserve existing servers.
 ```
 
 Restart Claude. Use either the extension or manual configuration to avoid duplicate servers.
+For existing JSON or service-account setups, omit both inline variables and set
+`FLIN_GTM_CREDENTIALS_FILE` to the absolute JSON path instead. When both inline values
+are present they take precedence; an incomplete pair is rejected without falling back.
+Never paste client secrets or token files into chat.
 
 ## Authentication storage and removal
 
@@ -85,12 +97,13 @@ To remove access, revoke the app in your Google account's third-party access set
 remove the extension in Claude, and delete its token cache. Removing an extension
 alone does not revoke Google consent. Do not send credential files or tokens in chat.
 
-Service accounts use the selected JSON directly and do not open browser consent.
+Service accounts use the legacy JSON/CLI configuration above and do not open browser consent.
 Grant the service-account email only the GTM access it needs.
 
 ## Troubleshooting
 
-- **Missing login:** choose the credentials file and run authentication.
+- **Missing login:** enter both OAuth values and run authentication.
+- **Both OAuth values required:** fill in the ID and secret for the same Desktop app client.
 - **403:** check Google account/container access, Tag Manager API enablement and quota.
 - **429:** wait before retrying; list calls return one page to keep usage bounded.
 - **Empty list:** the API returned no visible items for that collection; check the account.

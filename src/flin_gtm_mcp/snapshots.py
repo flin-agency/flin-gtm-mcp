@@ -33,7 +33,7 @@ def summary(value):
 
 def identity():
     creds = auth.credentials()  # Revalidate local auth even for cached data.
-    principal = (str(auth.credentials_file().resolve()), creds.token,
+    principal = (getattr(creds, "client_id", None), creds.token,
                  getattr(creds, "service_account_email", None),
                  getattr(creds, "signer_email", None))
     return hashlib.sha256(repr(principal).encode()).hexdigest()

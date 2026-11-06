@@ -4,9 +4,10 @@ Read-only Google Tag Manager MCP server for Claude Desktop and other stdio MCP c
 
 ## Install in Claude Desktop on macOS
 
-1. Use the locally built `dist/flin-gtm-mcp-0.2.2-macos.mcpb`, or [download the macOS installer](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.2/flin-gtm-mcp-0.2.2-macos.mcpb).
+1. Use the locally built `dist/flin-gtm-mcp-0.2.3-macos.mcpb`, or [download the macOS installer](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.3/flin-gtm-mcp-0.2.3-macos.mcpb).
 2. Open the bundle with a current Claude Desktop version supporting MCPB v0.4 / uv extensions.
-3. Select your Google **Desktop app** OAuth credentials JSON in the extension settings.
+3. Enter your Google **Desktop app** **OAuth client ID** and **OAuth client secret**
+   in the extension settings. The secret is a protected input field; no JSON file is required.
 4. Ask Claude to authenticate with flin Google Tag Manager, then complete Google's browser consent.
 5. Ask Claude to list your GTM accounts.
 
@@ -16,9 +17,10 @@ its version until Claude/the server restarts. Internet is required to check/inst
 updates; no terminal command or new MCPB download is needed for server updates.
 Supports Apple Silicon and Intel through uv-managed Python.
 
-**One-time migration:** replace an existing 0.2.1-or-older extension with 0.2.2.
-The old fixed-source bundles cannot update themselves. Your selected Google file
-and local OAuth token location remain the same. The extension's displayed version
+**Settings update:** install the 0.2.3 bundle once to get the two OAuth input fields.
+Existing 0.2.2 launchers still receive server updates using their selected JSON file.
+Older fixed-source bundles (up to 0.2.1) need a new bundle for automatic updates.
+Using the same OAuth client ID preserves the existing local token cache. The extension's displayed version
 is the launcher version; ask for `gtm_auth_status` to see `server_version`.
 Changes to extension settings, permissions or the launcher itself can still require
 a new MCPB installation. The server version updates automatically.
@@ -84,7 +86,8 @@ Python 3.11+:
 
 ```sh
 python3 -m pip install .
-export FLIN_GTM_CREDENTIALS_FILE="/absolute/path/to/google-oauth.json"
+export FLIN_GTM_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+export FLIN_GTM_CLIENT_SECRET="your-client-secret"
 flin-gtm-mcp login
 flin-gtm-mcp status
 flin-gtm-mcp serve
@@ -92,8 +95,10 @@ flin-gtm-mcp serve
 
 `serve` (the default) uses stdio. Protocol output is reserved for MCP; diagnostics
 use stderr. OAuth credentials are loaded lazily, so the server starts and lists
-tools before login. Service-account JSON is also supported when the service-account
-email has explicitly been granted access to the desired GTM container.
+tools before login. Both OAuth values must be set together. They take precedence
+over `FLIN_GTM_CREDENTIALS_FILE`; an incomplete pair fails instead of selecting another account.
+The JSON-file option remains available for existing clients and CLI use. Service-account
+JSON is supported when its email has explicitly been granted access to the GTM container.
 
 ## Development and packaging
 

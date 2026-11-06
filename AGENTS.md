@@ -18,3 +18,5 @@
   main; investigate any published-file hash mismatch instead of overwriting artifacts.
 - Explain the distinction between server updates on restart and changes to the desktop
   extension manifest/settings, which may require a new bundle installation.
+- Claude settings expose `client_id` and `client_secret` directly; keep the secret
+  marked sensitive. Preserve legacy JSON configuration for existing installations.

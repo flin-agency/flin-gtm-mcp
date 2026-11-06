@@ -35,6 +35,10 @@ def test_bundle_is_reproducible_and_excludes_unlisted_files(tmp_path, monkeypatc
         assert json.loads(archive.read('manifest.json')) == json.loads(
             (tmp_path / 'manifest.json').read_text()
         )
+        config = json.loads(archive.read('manifest.json'))
+        assert set(config['user_config']) == {'client_id', 'client_secret'}
+        assert config['user_config']['client_secret']['sensitive'] is True
+        assert all(field['required'] for field in config['user_config'].values())
     source = tmp_path / 'server.py'
     source.unlink()
     source.symlink_to(poison)

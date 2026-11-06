@@ -1,3 +1,21 @@
+# 0.2.3 — Enter OAuth client ID and secret directly
+
+- Claude extension settings now show **OAuth client ID** and **OAuth client secret**,
+  matching the other flin Google extensions. No JSON file is needed in the new form.
+- The secret is marked as a sensitive setting. Login retains PKCE, loopback-only
+  callback, fixed Google endpoints and the GTM read-only scope.
+- Existing JSON/service-account configuration remains supported by the server.
+  Both inline values must be supplied together and take precedence over a file.
+- Reusing the same client ID preserves the token cache. Snapshot identity also works
+  without a credentials file and remains isolated by client/account/token.
+- Automatic PyPI server updates and the combined PyPI/GitHub release remain enabled.
+
+Install the 0.2.3 MCPB once to get the new settings fields, enter credentials for a
+Google OAuth **Desktop app**, then request authentication in Claude. This manifest
+change requires updating the extension; later ordinary server updates still arrive
+from PyPI on restart. The bundle remains unsigned. Live Google consent and Claude's
+settings UI require a user account and are not covered by the automated tests.
+
 # 0.2.2 — Automatic PyPI updates for Claude Desktop
 
 - A small Claude launcher loads the newest stable flin-gtm-mcp version from PyPI

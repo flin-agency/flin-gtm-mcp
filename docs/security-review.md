@@ -88,3 +88,16 @@ and starts the actual public PyPI package before offering the GitHub MCPB. Tests
 also exercise an unchanged launcher upgrading from one stable version to another
 while ignoring a newer prerelease. Normal server updates take effect on restart;
 metadata/permission changes to the side-loaded extension may still need reinstallation.
+
+
+## 0.2.3 direct OAuth settings
+
+The extension accepts a client ID and sensitive client-secret field. The server reads
+`FLIN_GTM_CLIENT_ID` and `FLIN_GTM_CLIENT_SECRET`, builds the same fixed-endpoint Desktop
+OAuth configuration in memory and retains PKCE/read-only scope enforcement. A partial
+pair fails with a redacted error; a complete pair takes precedence over the legacy
+JSON file. Token-cache naming is unchanged, keyed by client ID. Snapshot identities
+use the validated client ID/token/service-account identity instead of requiring a
+credential-file path. Tests exercise inline login, JSON compatibility, account/cache
+isolation and startup from the actual bundle using synthetic settings and a temporary
+home directory; no real OAuth secrets are used or sent to Google during these tests.

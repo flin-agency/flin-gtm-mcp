@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import hashlib
 import json
+import os
 import shutil
 import tempfile
 import zipfile
@@ -34,10 +35,19 @@ async def check(wheel_dir=None, expected_version=None):
         if wheel_dir:
             # Exercise the exact release wheel before it is available on PyPI.
             args[-1:-1] = ["--find-links", str(Path(wheel_dir).resolve())]
+        values = {"client_id": "bundle-test.apps.googleusercontent.com",
+                  "client_secret": "synthetic-bundle-test-secret"}
+        env = {key: value.replace("${user_config.client_id}", values["client_id"])
+               .replace("${user_config.client_secret}", values["client_secret"])
+               for key, value in config["env"].items()}
+        home = Path(directory) / "test-home"
+        home.mkdir()
+        env.update(HOME=str(home), FLIN_GTM_CREDENTIALS_FILE="", UV_PYTHON_DOWNLOADS="automatic",
+                   UV_CACHE_DIR=os.environ.get("UV_CACHE_DIR", str(Path(directory) / "uv-cache")))
         params = StdioServerParameters(
             command=shutil.which("uv"),
             args=args,
-            env={"FLIN_GTM_CREDENTIALS_FILE": "", "UV_PYTHON_DOWNLOADS": "automatic"},
+            env=env,
         )
         async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
             await session.initialize()
@@ -46,6 +56,8 @@ async def check(wheel_dir=None, expected_version=None):
             assert not result.isError
             status = result.structuredContent or json.loads(result.content[0].text)
             assert status["server_version"] == (expected_version or version)
+            assert not status["authenticated"] and "login missing" in status["message"]
+            assert values["client_secret"] not in json.dumps(status)
     print("Archived MCPB: isolated uv launch, handshake and 34 tools verified.")
 
 

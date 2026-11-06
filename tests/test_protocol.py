@@ -6,7 +6,8 @@ from mcp.client.stdio import stdio_client
 
 async def test_real_stdio_handshake_tools_and_validation():
     params = StdioServerParameters(
-        command=sys.executable, args=["-m", "flin_gtm_mcp"], env={"FLIN_GTM_CREDENTIALS_FILE": ""}
+        command=sys.executable, args=["-m", "flin_gtm_mcp"],
+        env={"FLIN_GTM_CREDENTIALS_FILE": "", "FLIN_GTM_CLIENT_ID": "", "FLIN_GTM_CLIENT_SECRET": ""},
     )
     async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
         await session.initialize()

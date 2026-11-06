@@ -2,7 +2,7 @@
   "manifest_version": "0.4",
   "name": "flin-gtm-mcp",
   "display_name": "flin Google Tag Manager",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Read-only Google Tag Manager: inspect accounts, containers, tags, triggers and versions.",
   "author": {
     "name": "flin agency"
@@ -36,7 +36,8 @@
         "server.py"
       ],
       "env": {
-        "FLIN_GTM_CREDENTIALS_FILE": "${user_config.credentials_file}"
+        "FLIN_GTM_CLIENT_ID": "${user_config.client_id}",
+        "FLIN_GTM_CLIENT_SECRET": "${user_config.client_secret}"
       }
     }
   },
@@ -56,12 +57,20 @@
     "flin"
   ],
   "user_config": {
-    "credentials_file": {
-      "type": "file",
-      "title": "Google OAuth credentials JSON",
-      "description": "Select your Google Cloud Desktop app OAuth JSON (or service-account JSON). Enable Tag Manager API first.",
-      "required": true
+    "client_id": {
+      "type": "string",
+      "title": "OAuth client ID",
+      "description": "Google OAuth Desktop app client ID. Enable the Tag Manager API in that Google Cloud project.",
+      "required": true,
+      "sensitive": false
+    },
+    "client_secret": {
+      "type": "string",
+      "title": "OAuth client secret",
+      "description": "Secret belonging to the same Google OAuth Desktop app client.",
+      "required": true,
+      "sensitive": true
     }
   },
-  "long_description": "Read-only Google Tag Manager access. Downloads the newest stable flin-gtm-mcp server from PyPI whenever the extension starts. Updates need internet and take effect after a server/Claude restart. Google credentials and login stay on this Mac."
+  "long_description": "Read-only Google Tag Manager access. Enter your Google Desktop app OAuth client ID and client secret, then request Google authentication. Downloads the newest stable flin-gtm-mcp server from PyPI whenever the extension starts. Updates need internet and take effect after a server/Claude restart. Google credentials and login stay on this Mac."
 }

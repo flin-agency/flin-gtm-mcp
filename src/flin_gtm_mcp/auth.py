@@ -48,16 +48,29 @@ def credentials_file() -> Path:
     value = os.environ.get("FLIN_GTM_CREDENTIALS_FILE", "")
     if not value:
         raise AuthError(
-            "Configure FLIN_GTM_CREDENTIALS_FILE with your Google Desktop OAuth JSON file."
+            "Enter your OAuth client ID and client secret in the extension settings, "
+            "or configure FLIN_GTM_CREDENTIALS_FILE with your Google Desktop OAuth JSON."
         )
     return Path(value).expanduser()
 
 
 def config() -> dict:
-    try:
-        data = json.loads(credentials_file().read_text())
-    except (OSError, ValueError):
-        raise AuthError("Cannot read Google credentials JSON. Check the configured file.") from None
+    client_id = os.environ.get("FLIN_GTM_CLIENT_ID", "").strip()
+    client_secret = os.environ.get("FLIN_GTM_CLIENT_SECRET", "").strip()
+    if client_id or client_secret:
+        if not client_id or not client_secret:
+            raise AuthError("Enter both OAuth client ID and client secret in the extension settings.")
+        data = {"installed": {
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": TOKEN_URI,
+        }}
+    else:
+        try:
+            data = json.loads(credentials_file().read_text())
+        except (OSError, ValueError):
+            raise AuthError("Cannot read Google credentials JSON. Check the configured file.") from None
     if not isinstance(data, dict):
         raise AuthError("Google credentials must be a JSON object.")
     if data.get("type") == "service_account":

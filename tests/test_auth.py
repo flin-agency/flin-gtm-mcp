@@ -7,6 +7,12 @@ import pytest
 from flin_gtm_mcp import auth
 
 
+@pytest.fixture(autouse=True)
+def clear_inline_credentials(monkeypatch):
+    monkeypatch.delenv("FLIN_GTM_CLIENT_ID", raising=False)
+    monkeypatch.delenv("FLIN_GTM_CLIENT_SECRET", raising=False)
+
+
 @pytest.fixture
 def oauth(tmp_path, monkeypatch):
     data = {
@@ -160,3 +166,62 @@ def test_invalid_client_identity_is_safe(oauth, value):
     data['installed']['client_id'] = value
     file.write_text(json.dumps(data))
     assert auth.status()['authenticated'] is False
+
+
+def test_inline_credentials_build_fixed_google_config_without_file(monkeypatch):
+    monkeypatch.delenv('FLIN_GTM_CREDENTIALS_FILE', raising=False)
+    monkeypatch.setenv('FLIN_GTM_CLIENT_ID', ' example.apps.googleusercontent.com ')
+    monkeypatch.setenv('FLIN_GTM_CLIENT_SECRET', ' example-secret ')
+    data = auth.config()['installed']
+    assert data == {
+        'client_id': 'example.apps.googleusercontent.com',
+        'client_secret': 'example-secret',
+        'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+        'token_uri': auth.TOKEN_URI,
+    }
+
+
+@pytest.mark.parametrize('missing', ['FLIN_GTM_CLIENT_ID', 'FLIN_GTM_CLIENT_SECRET'])
+def test_partial_inline_credentials_never_fall_back_to_another_client(oauth, monkeypatch, missing):
+    monkeypatch.setenv('FLIN_GTM_CLIENT_ID', 'another.apps.googleusercontent.com')
+    monkeypatch.setenv('FLIN_GTM_CLIENT_SECRET', 'do-not-expose-this-secret')
+    monkeypatch.setenv(missing, '   ')
+    status = auth.status()
+    assert not status['authenticated'] and 'both OAuth' in status['message']
+    assert 'do-not-expose' not in json.dumps(status)
+
+
+def test_inline_login_preserves_client_token_cache_and_readonly_scope(tmp_path, monkeypatch):
+    monkeypatch.setattr(auth.Path, 'home', lambda: tmp_path)
+    monkeypatch.setenv('FLIN_GTM_CLIENT_ID', 'same.apps.googleusercontent.com')
+    monkeypatch.setenv('FLIN_GTM_CLIENT_SECRET', 'synthetic-secret')
+    monkeypatch.setenv('FLIN_GTM_CREDENTIALS_FILE', '/does/not/exist.json')
+    inline_data = auth.config()
+    inline_path = auth.token_file(inline_data)
+    assert inline_path == auth.token_file({'installed': {'client_id': 'same.apps.googleusercontent.com'}})
+    creds = Mock(scopes=auth.SCOPES, granted_scopes=auth.SCOPES)
+    creds.to_json.return_value = '{}'
+    flow = Mock()
+    flow.run_local_server.return_value = creds
+    factory = Mock(return_value=flow)
+    monkeypatch.setattr(auth.DesktopFlow, 'from_client_config', factory)
+    result = auth.login()
+    assert result['authenticated']
+    assert factory.call_args.args[0] == inline_data
+    assert factory.call_args.kwargs['scopes'] == [auth.SCOPE]
+    assert factory.call_args.kwargs['autogenerate_code_verifier'] is True
+    assert inline_path.exists()
+    assert 'synthetic-secret' not in json.dumps(result)
+
+
+def test_snapshot_identity_without_credential_file_and_client_isolation(monkeypatch):
+    from flin_gtm_mcp.snapshots import identity
+
+    monkeypatch.delenv('FLIN_GTM_CREDENTIALS_FILE', raising=False)
+    creds = Mock(client_id='first.apps.googleusercontent.com', token='example-token',
+                 service_account_email=None, signer_email=None)
+    monkeypatch.setattr(auth, 'credentials', lambda: creds)
+    first = identity()
+    assert first == identity()
+    creds.client_id = 'second.apps.googleusercontent.com'
+    assert identity() != first
