@@ -17,8 +17,10 @@ created automatically. Google OAuth apps in Testing may require frequent re-logi
 
 ## Install the MCPB
 
-Download the `.mcpb` from the GitHub release and open it with Claude Desktop,
-or use Claude's local extension installation control. Approve installation and
+Download [flin-gtm-mcp-0.2.1-macos.mcpb](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.1/flin-gtm-mcp-0.2.1-macos.mcpb).
+In Claude Desktop, open **Settings → Desktop app → Extensions → Manage →
+Advanced settings → Install Extension…** (older layout: **Settings → Extensions**).
+Select the downloaded file. Approve installation and
 select the credentials JSON. Claude manages the Python runtime with uv and installs
 locked dependencies on first start. An internet connection is required.
 

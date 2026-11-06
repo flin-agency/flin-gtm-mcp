@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import os
+import stat
 import sys
 import tempfile
 import threading
@@ -16,6 +17,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 SCOPE = "https://www.googleapis.com/auth/tagmanager.readonly"
 SCOPES = [SCOPE]
+# Public endpoint, not a password.
+TOKEN_URI = "https://oauth2.googleapis.com/token"  # nosec B105
 # The OAuth callback handler logs URLs with authorization codes at INFO.
 logging.getLogger("google_auth_oauthlib.flow").setLevel(logging.WARNING)
 _LOCK = threading.RLock()
@@ -23,6 +26,22 @@ _LOCK = threading.RLock()
 
 class AuthError(RuntimeError):
     pass
+
+
+class GoogleTokenRequest(Request):
+    """Never forward credential-bearing refresh requests to another destination."""
+
+    def __call__(self, url, method="GET", body=None, headers=None, **kwargs):
+        if url != TOKEN_URI or method != "POST":
+            raise AuthError("Unsupported Google token request.")
+        kwargs.update(timeout=30, allow_redirects=False)
+        return super().__call__(url, method=method, body=body, headers=headers, **kwargs)
+
+
+class DesktopFlow(InstalledAppFlow):
+    def fetch_token(self, **kwargs):
+        kwargs.update(timeout=30, allow_redirects=False)
+        return super().fetch_token(**kwargs)
 
 
 def credentials_file() -> Path:
@@ -43,17 +62,22 @@ def config() -> dict:
         raise AuthError("Google credentials must be a JSON object.")
     if data.get("type") == "service_account":
         # Restrict token destinations even for locally supplied credential files.
-        if data.get("token_uri") != "https://oauth2.googleapis.com/token":
+        if (data.get("token_uri") != TOKEN_URI
+                or data.get("universe_domain", "googleapis.com") != "googleapis.com"):
             raise AuthError("Unsupported service account token endpoint.")
     else:
         installed = data.get("installed", {})
-        if not isinstance(installed, dict) or not installed.get("client_id"):
+        if (not isinstance(installed, dict)
+                or not isinstance(installed.get("client_id"), str)
+                or not installed["client_id"]
+                or not isinstance(installed.get("client_secret"), str)
+                or not installed["client_secret"]):
             raise AuthError(
                 "Use a Google OAuth client of type Desktop app (installed), not Web app."
             )
         if (
             installed.get("auth_uri") != "https://accounts.google.com/o/oauth2/auth"
-            or installed.get("token_uri") != "https://oauth2.googleapis.com/token"
+            or installed.get("token_uri") != TOKEN_URI
         ):
             raise AuthError("Unsupported Google OAuth endpoints.")
     return data
@@ -68,8 +92,27 @@ def token_file(data: dict) -> Path:
     return root / f"token-{key}.json"
 
 
-def save_token(path: Path, creds: Credentials) -> None:
+def private_token_directory(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    info = path.parent.lstat()
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid():
+        raise AuthError("Token directory must be a real directory owned by the current user.")
+    path.parent.chmod(0o700)
+
+
+def read_token(path: Path) -> dict:
+    private_token_directory(path)
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(fd) as source:
+        info = os.fstat(source.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_nlink != 1:
+            raise AuthError("Token cache must be a private, regular file owned by the current user.")
+        os.fchmod(source.fileno(), 0o600)
+        return json.load(source)
+
+
+def save_token(path: Path, creds: Credentials) -> None:
+    private_token_directory(path)
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".token-")
     try:
         with os.fdopen(fd, "w") as output:
@@ -88,7 +131,9 @@ def login() -> dict:
             credentials()  # Validate before reporting success.
             return {"authenticated": True, "method": "service_account", "scope": SCOPE}
         try:
-            flow = InstalledAppFlow.from_client_config(data, scopes=SCOPES)
+            flow = DesktopFlow.from_client_config(
+                data, scopes=SCOPES, autogenerate_code_verifier=True,
+            )
             creds = flow.run_local_server(
                 host="127.0.0.1",
                 port=0,
@@ -124,21 +169,28 @@ def credentials():
                 raise AuthError("Invalid service account credentials.") from None
         path = token_file(data)
         try:
-            stored = json.loads(path.read_text())
+            stored = read_token(path)
             if set(stored.get("scopes", [])) != set(SCOPES):
                 raise AuthError("Stored scopes are not read-only. Run login again.")
             if stored.get("client_id") != data["installed"]["client_id"]:
                 raise AuthError("OAuth client mismatch. Run login again.")
             # Never trust token endpoint or client secret from the token cache.
             stored.update(
-                token_uri="https://oauth2.googleapis.com/token",
+                token_uri=TOKEN_URI,
                 client_secret=data["installed"].get("client_secret"),
+                universe_domain="googleapis.com",
             )
             creds = Credentials.from_authorized_user_info(stored, scopes=SCOPES)
             if not creds.valid:
                 if not creds.refresh_token:
                     raise AuthError("Google login required. Run flin-gtm-mcp login.")
-                creds.refresh(Request())
+                request = GoogleTokenRequest()
+                try:
+                    creds.refresh(request)
+                finally:
+                    request.session.close()
+                if set(creds.granted_scopes or creds.scopes or []) != set(SCOPES):
+                    raise AuthError("Unexpected OAuth scopes. Revoke this app and reconnect read-only.")
                 save_token(path, creds)
             return creds
         except AuthError:

@@ -4,8 +4,7 @@ Read-only Google Tag Manager MCP server for Claude Desktop and other stdio MCP c
 
 ## Install in Claude Desktop on macOS
 
-1. Use the locally built `dist/flin-gtm-mcp-0.2.0-macos.mcpb`, or download an available release from
-   [GitHub Releases](https://github.com/flin-agency/flin-gtm-mcp/releases).
+1. Use the locally built `dist/flin-gtm-mcp-0.2.1-macos.mcpb`, or [download the macOS installer](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.1/flin-gtm-mcp-0.2.1-macos.mcpb).
 2. Open the bundle with a current Claude Desktop version supporting MCPB v0.4 / uv extensions.
 3. Select your Google **Desktop app** OAuth credentials JSON in the extension settings.
 4. Ask Claude to authenticate with flin Google Tag Manager, then complete Google's browser consent.
@@ -16,7 +15,8 @@ installs Python and dependencies on first use (internet required); no PyPI relea
 `flin-gtm-mcp` is needed. Supports Apple Silicon and Intel through uv-managed Python.
 Older Claude versions without uv extension support must be updated or use manual setup.
 
-See [Claude setup and Google credentials](docs/claude-desktop.md).
+See [Claude setup and Google credentials](docs/claude-desktop.md) and the
+[0.2.1 security review](docs/security-review.md).
 
 ## Features
 
@@ -93,10 +93,11 @@ email has explicitly been granted access to the desired GTM container.
 uv sync --extra dev --frozen
 uv run pytest
 uv run ruff check .
+uv run bandit -q -r src
 uv run python -m build
 uv run twine check dist/*.whl dist/*.tar.gz
 uv run python scripts/build_mcpb.py
-npx --yes @anthropic-ai/mcpb validate manifest.json
+npx --yes @anthropic-ai/mcpb@2.1.2 validate manifest.json
 ```
 
 The MCPB builder includes only explicit project files, never `.env`, local credentials,

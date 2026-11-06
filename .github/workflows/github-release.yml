@@ -2,22 +2,34 @@ name: GitHub release (no PyPI upload)
 on:
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
+concurrency:
+  group: github-release
+  cancel-in-progress: false
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
         with:
           version: '0.10.11'
       - run: uv sync --frozen --extra dev
-      - run: uv run ruff check . && uv run pytest
+      - run: uv run ruff check .
+      - run: uv run pytest
+      - run: uv run bandit -q -r src
+      - run: uv export --frozen --all-extras --no-emit-project --no-hashes --no-annotate --no-header -o requirements-audit.txt > /dev/null
+      - run: uv run pip-audit --disable-pip --no-deps -r requirements-audit.txt
       - run: uv build
       - run: uv run twine check dist/*.whl dist/*.tar.gz
       - run: uv run python scripts/build_mcpb.py
       - run: uv run python scripts/check_mcpb.py
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
       - run: npx --yes @anthropic-ai/mcpb@2.1.2 validate manifest.json
@@ -26,4 +38,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(uv run python -c 'from flin_gtm_mcp import __version__; print(__version__)')
-          gh release create "v$VERSION" dist/* --target "$GITHUB_SHA" --title "flin GTM MCP v$VERSION" --notes-file docs/release-notes.md
+          gh release create "v$VERSION" "dist/flin_gtm_mcp-$VERSION-py3-none-any.whl" "dist/flin_gtm_mcp-$VERSION.tar.gz" "dist/flin-gtm-mcp-$VERSION-macos.mcpb" "dist/flin-gtm-mcp-$VERSION-macos.mcpb.sha256" --target "$GITHUB_SHA" --title "flin GTM MCP v$VERSION" --notes-file docs/release-notes.md

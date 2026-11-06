@@ -9,7 +9,7 @@ import requests
 from google.auth.exceptions import GoogleAuthError
 from google.auth.transport.requests import AuthorizedSession
 
-from .auth import credentials
+from .auth import GoogleTokenRequest, credentials
 
 ACCOUNT = r"accounts/[0-9]+"
 CONTAINER = ACCOUNT + r"/containers/[0-9]+"
@@ -97,8 +97,14 @@ class GTMClient:
         )
         if not any(re.fullmatch(pattern, path) for pattern in patterns):
             raise GTMError("GTM operation is not on the read-only allowlist.")
-        session = self._session or AuthorizedSession(credentials())
+        token_request = None
+        session = self._session
         try:
+            if session is None:
+                creds = credentials()
+                token_request = GoogleTokenRequest()
+                session = AuthorizedSession(creds, auth_request=token_request,
+                                            refresh_timeout=30, max_refresh_attempts=0)
             for attempt in range(3):
                 self.limiter.wait()
                 request = session.get if method == "GET" else session.post
@@ -112,7 +118,8 @@ class GTMClient:
                         raise GTMError("Unexpected Google API response.")
                     return result
                 if attempt < 2 and retryable(response):
-                    delay = 2 ** (attempt + 1) + random.uniform(0, 1)
+                    # Jitter only; no security-sensitive randomness.
+                    delay = 2 ** (attempt + 1) + random.uniform(0, 1)  # nosec B311
                     header = response.headers.get("Retry-After")
                     if isinstance(header, str) and header.isdigit():
                         # Do not retry earlier than requested; stop if outside our bounded wait.
@@ -137,8 +144,10 @@ class GTMClient:
         except ValueError:
             raise GTMError("Invalid JSON response from Google API.") from None
         finally:
-            if self._session is None:
+            if self._session is None and session is not None:
                 session.close()
+            if token_request is not None:
+                token_request.session.close()
 
     def _get(self, path: str, params=None) -> dict:
         return self._request("GET", path, params)

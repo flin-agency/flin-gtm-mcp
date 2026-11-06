@@ -1,6 +1,7 @@
 """Test the archived bundle in an isolated folder using its actual uv command."""
 
 import asyncio
+import hashlib
 import json
 import shutil
 import tempfile
@@ -16,6 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 async def check():
     version = json.loads((ROOT / "manifest.json").read_text())["version"]
     bundle = ROOT / "dist" / f"flin-gtm-mcp-{version}-macos.mcpb"
+    expected = bundle.with_suffix(".mcpb.sha256").read_text().split()[0]
+    assert hashlib.sha256(bundle.read_bytes()).hexdigest() == expected
     with tempfile.TemporaryDirectory(prefix="flin-gtm-bundle-") as directory:
         with zipfile.ZipFile(bundle) as archive:
             names = archive.namelist()
