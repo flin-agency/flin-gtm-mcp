@@ -110,7 +110,16 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: uv run python scripts/verify_pypi.py "$RELEASE_VERSION" --dist dist
       - name: Start the Claude bundle against public PyPI
-        run: uv run python scripts/check_mcpb.py
+        timeout-minutes: 15
+        run: |
+          for attempt in $(seq 1 24); do
+            if uv run python scripts/check_mcpb.py; then
+              exit 0
+            fi
+            echo "Waiting for PyPI index propagation (attempt $attempt/24)."
+            sleep 30
+          done
+          exit 1
       - name: Publish the matching Claude Desktop package and distributions
         env:
           GH_TOKEN: ${{ github.token }}
