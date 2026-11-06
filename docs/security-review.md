@@ -70,3 +70,21 @@ Live Google consent/API access and installation through Claude Desktop's UI requ
 an authorized user account and were not exercised by the automated review. The MCPB
 is unsigned and requires a current Claude Desktop with MCPB v0.4 / uv support.
 SHA-256 detects accidental changes but is not an independent publisher signature.
+
+
+## 0.2.2 distribution change
+
+The 0.2.1 review above describes its fixed-source bundle. Starting with 0.2.2 the
+MCPB contains only the launcher and documentation, not server source or `uv.lock`.
+It uses the official HTTPS PyPI index, checks for a newer flin-gtm-mcp release on
+each startup and excludes prereleases. This intentionally trusts future stable
+PyPI releases; installed server code is no longer frozen to the initial bundle's
+checksum. Dependencies resolve under the published package's version constraints.
+The read-only API and credential boundaries remain unchanged.
+
+The unified release workflow tests on macOS/Linux, publishes through the existing
+PyPI Trusted Publisher, compares published distribution hashes to the tested files
+and starts the actual public PyPI package before offering the GitHub MCPB. Tests
+also exercise an unchanged launcher upgrading from one stable version to another
+while ignoring a newer prerelease. Normal server updates take effect on restart;
+metadata/permission changes to the side-loaded extension may still need reinstallation.

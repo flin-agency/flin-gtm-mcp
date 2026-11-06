@@ -1,3 +1,21 @@
+# 0.2.2 — Automatic PyPI updates for Claude Desktop
+
+- A small Claude launcher loads the newest stable flin-gtm-mcp version from PyPI
+  on each server start. Ordinary server updates no longer need a new MCPB install.
+- One release workflow now runs automatically for new versions on main: macOS/Linux
+  tests and security checks → PyPI → verify public package and file hashes → GitHub
+  release with a matching macOS MCPB, checksum, wheel and source archive.
+- `gtm_auth_status` includes `server_version`; the desktop extension's own version
+  identifies the launcher, not the currently running server.
+- A regression test verifies two consecutive stable versions through the same installed
+  launcher and ensures a newer prerelease is not selected.
+
+**One-time migration:** install the 0.2.2 MCPB if using 0.2.1 or older. Afterwards,
+restart Claude/the server to activate future PyPI updates. Credentials and the local
+token location stay the same. Internet is needed for startup checks. Changes to the
+extension settings or launcher itself can still require a new MCPB. The bundle is
+unsigned; live Google consent and Claude's installation UI are not automated tests.
+
 # 0.2.1 — Security review and macOS installer
 
 Download **flin-gtm-mcp-0.2.1-macos.mcpb** below for Claude Desktop on Mac

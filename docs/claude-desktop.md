@@ -17,18 +17,34 @@ created automatically. Google OAuth apps in Testing may require frequent re-logi
 
 ## Install the MCPB
 
-Download [flin-gtm-mcp-0.2.1-macos.mcpb](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.1/flin-gtm-mcp-0.2.1-macos.mcpb).
+Download [flin-gtm-mcp-0.2.2-macos.mcpb](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.2/flin-gtm-mcp-0.2.2-macos.mcpb).
 In Claude Desktop, open **Settings → Desktop app → Extensions → Manage →
 Advanced settings → Install Extension…** (older layout: **Settings → Extensions**).
 Select the downloaded file. Approve installation and
-select the credentials JSON. Claude manages the Python runtime with uv and installs
-locked dependencies on first start. An internet connection is required.
+select the credentials JSON. Claude manages Python with uv. On every server start it checks PyPI for the newest
+stable flin-gtm-mcp version and updates its isolated environment. Internet is required.
+New code becomes active after the next server/Claude restart. Credentials stay in
+the same location; a normal server update does not require reauthentication.
 
 Requires a Claude Desktop version with MCPB v0.4 / uv support; if the bundle is
 rejected as unsupported, update Claude or use the manual stdio setup below.
 
 Try: “Melde mich beim flin Google Tag Manager an und liste meine Accounts.”
 Then: “Zeige Tags und Trigger im Workspace …; ändere nichts.”
+
+## Automatic updates and one-time migration
+
+Install 0.2.2 once if you currently have a bundle up to 0.2.1; old bundles execute
+fixed local source. From 0.2.2 onward, ordinary server updates come from PyPI at
+startup, without reinstalling the extension. No hot replacement happens during a
+running conversation. The extension's displayed version stays at the launcher
+version; `gtm_auth_status` reports the active `server_version`.
+
+Changes to the extension manifest, settings or launcher can still require a new
+MCPB. Custom side-loaded extension metadata does not itself update from PyPI.
+The PyPI project is fixed to flin-gtm-mcp and the official HTTPS index. Stable
+versions only; release candidates are excluded. Network failure may prevent startup
+until PyPI is reachable; the launcher does not silently fall back to bundled old code.
 
 ## Manual stdio setup / CLI login
 

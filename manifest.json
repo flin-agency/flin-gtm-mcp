@@ -2,24 +2,59 @@
   "manifest_version": "0.4",
   "name": "flin-gtm-mcp",
   "display_name": "flin Google Tag Manager",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Read-only Google Tag Manager: inspect accounts, containers, tags, triggers and versions.",
-  "author": {"name": "flin agency"},
-  "repository": {"type": "git", "url": "https://github.com/flin-agency/flin-gtm-mcp"},
+  "author": {
+    "name": "flin agency"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flin-agency/flin-gtm-mcp"
+  },
   "support": "https://github.com/flin-agency/flin-gtm-mcp/issues",
-  "privacy_policies": ["https://github.com/flin-agency/flin-gtm-mcp/blob/v0.2.1/README.md#privacy-and-limits", "https://policies.google.com/privacy"],
+  "privacy_policies": [
+    "https://github.com/flin-agency/flin-gtm-mcp/blob/main/README.md#privacy-and-limits",
+    "https://policies.google.com/privacy"
+  ],
   "server": {
     "type": "uv",
     "entry_point": "server.py",
     "mcp_config": {
       "command": "uv",
-      "args": ["run", "--frozen", "--directory", "${__dirname}", "server.py"],
-      "env": {"FLIN_GTM_CREDENTIALS_FILE": "${user_config.credentials_file}"}
+      "args": [
+        "run",
+        "--no-config",
+        "--no-env-file",
+        "--directory",
+        "${__dirname}",
+        "--upgrade-package",
+        "flin-gtm-mcp",
+        "--default-index",
+        "https://pypi.org/simple",
+        "--prerelease",
+        "disallow",
+        "server.py"
+      ],
+      "env": {
+        "FLIN_GTM_CREDENTIALS_FILE": "${user_config.credentials_file}"
+      }
     }
   },
-  "compatibility": {"platforms": ["darwin"], "runtimes": {"python": ">=3.11"}},
+  "compatibility": {
+    "platforms": [
+      "darwin"
+    ],
+    "runtimes": {
+      "python": ">=3.11"
+    }
+  },
   "tools_generated": true,
-  "keywords": ["google-tag-manager", "gtm", "read-only", "flin"],
+  "keywords": [
+    "google-tag-manager",
+    "gtm",
+    "read-only",
+    "flin"
+  ],
   "user_config": {
     "credentials_file": {
       "type": "file",
@@ -27,5 +62,6 @@
       "description": "Select your Google Cloud Desktop app OAuth JSON (or service-account JSON). Enable Tag Manager API first.",
       "required": true
     }
-  }
+  },
+  "long_description": "Read-only Google Tag Manager access. Downloads the newest stable flin-gtm-mcp server from PyPI whenever the extension starts. Updates need internet and take effect after a server/Claude restart. Google credentials and login stay on this Mac."
 }

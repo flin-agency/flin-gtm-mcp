@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "flin-gtm-mcp"
-version = "0.2.1"
+version = "0.2.2"
 description = "Read-only Google Tag Manager MCP server by flin"
 readme = "README.md"
 requires-python = ">=3.11"

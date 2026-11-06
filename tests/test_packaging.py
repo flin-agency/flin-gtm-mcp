@@ -28,7 +28,10 @@ def test_bundle_is_reproducible_and_excludes_unlisted_files(tmp_path, monkeypatc
     assert bundle.read_bytes() == first
     with zipfile.ZipFile(bundle) as archive:
         assert all(b'SECRET_MUST_NOT_SHIP' not in archive.read(n) for n in archive.namelist())
-        assert len(archive.namelist()) == 16
+        assert len(archive.namelist()) == 8
+        assert "uv.lock" not in archive.namelist()
+        assert not any(name.startswith("src/") for name in archive.namelist())
+        assert b'flin-gtm-desktop-launcher' in archive.read('pyproject.toml')
         assert json.loads(archive.read('manifest.json')) == json.loads(
             (tmp_path / 'manifest.json').read_text()
         )

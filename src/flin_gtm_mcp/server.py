@@ -4,7 +4,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
-from . import auth
+from . import __version__, auth
 from .analysis import dependencies, diff_versions
 from .client import ACCOUNT, COLLECTIONS, CONTAINER, WORKSPACE, GTMClient, GTMError
 from .snapshots import STORE, summary
@@ -32,7 +32,7 @@ def safe_call(fn, *args):
 @mcp.tool(annotations=READ)
 def gtm_auth_status() -> dict:
     """Check Google authentication without opening a browser. May refresh an existing token."""
-    return auth.status()
+    return {**auth.status(), "server_version": __version__}
 
 
 @mcp.tool(

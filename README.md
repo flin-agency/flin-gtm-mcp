@@ -4,16 +4,24 @@ Read-only Google Tag Manager MCP server for Claude Desktop and other stdio MCP c
 
 ## Install in Claude Desktop on macOS
 
-1. Use the locally built `dist/flin-gtm-mcp-0.2.1-macos.mcpb`, or [download the macOS installer](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.1/flin-gtm-mcp-0.2.1-macos.mcpb).
+1. Use the locally built `dist/flin-gtm-mcp-0.2.2-macos.mcpb`, or [download the macOS installer](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.2/flin-gtm-mcp-0.2.2-macos.mcpb).
 2. Open the bundle with a current Claude Desktop version supporting MCPB v0.4 / uv extensions.
 3. Select your Google **Desktop app** OAuth credentials JSON in the extension settings.
 4. Ask Claude to authenticate with flin Google Tag Manager, then complete Google's browser consent.
 5. Ask Claude to list your GTM accounts.
 
-The bundle contains the server source and a dependency lockfile. Claude's uv runtime
-installs Python and dependencies on first use (internet required); no PyPI release of
-`flin-gtm-mcp` is needed. Supports Apple Silicon and Intel through uv-managed Python.
-Older Claude versions without uv extension support must be updated or use manual setup.
+The bundle is a small launcher. Each extension/server start uses Claude's uv runtime
+to fetch the newest stable `flin-gtm-mcp` release from PyPI. A running process keeps
+its version until Claude/the server restarts. Internet is required to check/install
+updates; no terminal command or new MCPB download is needed for server updates.
+Supports Apple Silicon and Intel through uv-managed Python.
+
+**One-time migration:** replace an existing 0.2.1-or-older extension with 0.2.2.
+The old fixed-source bundles cannot update themselves. Your selected Google file
+and local OAuth token location remain the same. The extension's displayed version
+is the launcher version; ask for `gtm_auth_status` to see `server_version`.
+Changes to extension settings, permissions or the launcher itself can still require
+a new MCPB installation. The server version updates automatically.
 
 See [Claude setup and Google credentials](docs/claude-desktop.md) and the
 [0.2.1 security review](docs/security-review.md).
@@ -102,28 +110,34 @@ npx --yes @anthropic-ai/mcpb@2.1.2 validate manifest.json
 
 The MCPB builder includes only explicit project files, never `.env`, local credentials,
 tokens, virtual environments or Git metadata. SHA-256 accompanies the bundle.
-CI runs tests and builds on macOS and Linux. The manual GitHub Release workflow (`github-release.yml`) publishes wheel, source
-distribution and MCPB. The separate PyPI workflow (`release.yml`) publishes the
-existing release distributions using PyPI Trusted Publishing.
+CI runs tests and builds on macOS and Linux, including an unchanged installed
+launcher loading two successive package versions and rejecting a newer prerelease.
+For a pre-publication bundle test, build a wheel and run
+`uv run python scripts/check_mcpb.py --wheel-dir dist`.
 
-## PyPI release
+## Automatic releases: PyPI and Claude Desktop
 
-Configure a Trusted Publisher in PyPI with:
+Every new version pushed to `main` runs **Release to PyPI and Claude Desktop**
+(`release.yml`) automatically:
 
-- Project: `flin-gtm-mcp`
-- Owner: `flin-agency`
-- Repository: `flin-gtm-mcp`
-- Workflow: `release.yml`
-- Environment: `pypi`
+1. Validate matching package/source/manifest versions; skip a completed release.
+2. Run tests, security scans, builds and bundle startup on macOS and Linux.
+3. Publish the tested wheel/source to PyPI with Trusted Publishing.
+4. Verify PyPI file hashes and start the bundle using the public PyPI package.
+5. Publish the matching `.mcpb`, checksum, wheel and source archive on GitHub.
 
-For the first publication, register a pending publisher at
-https://pypi.org/manage/account/publishing/ while signed in to the intended owner account.
-Then run **Actions → Publish release to PyPI → Run workflow** on `main`, with the
-existing release tag (for example `v0.1.0`). No stored API token is needed.
-The workflow validates the package name, version and metadata before uploading
-only the wheel and source archive. It never uploads the Claude bundle to PyPI.
+For each release, bump `pyproject.toml`, `manifest.json` and
+`src/flin_gtm_mcp/__init__.py`, refresh `uv.lock` and update release notes.
+A code-only commit without a new version does not replace an existing release.
+A failed run can be retried under Actions; no separate PyPI action is needed.
+GitHub publication waits for successful PyPI publication and the public-package test.
 
-After successful publication: `pip install flin-gtm-mcp`.
+The existing PyPI Trusted Publisher must retain owner `flin-agency`, repository
+`flin-gtm-mcp`, workflow `release.yml` and environment `pypi`. No stored API token
+is needed. Only wheel/source distributions go to PyPI; MCPB files go to GitHub.
+
+[PyPI package](https://pypi.org/project/flin-gtm-mcp/)
+· [GitHub releases](https://github.com/flin-agency/flin-gtm-mcp/releases)
 
 ## Privacy and limits
 
@@ -133,6 +147,9 @@ that client's settings. No flin telemetry or hosted proxy is used. OAuth tokens 
 stored in a per-client file with owner-only permissions, not in the macOS Keychain.
 Custom HTML and configuration strings are untrusted data and are never executed.
 The extension is unsigned. Real Google access requires your own credentials and consent.
+Automatic updates trust the stable releases published by this project on PyPI and
+resolve dependencies using the package constraints. The launcher deliberately does
+not freeze the application to the version it originally installed.
 
 [Google authorization reference](https://developers.google.com/tag-platform/tag-manager/api/v2/authorization)
 · [Read-only contract](docs/read-only-contract.md)

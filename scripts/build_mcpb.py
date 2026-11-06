@@ -19,8 +19,6 @@ def build():
         ROOT / name
         for name in (
             "manifest.json",
-            "pyproject.toml",
-            "uv.lock",
             "server.py",
             "README.md",
             "docs/claude-desktop.md",
@@ -29,22 +27,25 @@ def build():
             "docs/security-review.md",
         )
     ]
-    files += [ROOT / "src/flin_gtm_mcp" / name for name in (
-        "__init__.py", "__main__.py", "auth.py", "client.py", "server.py",
-        "snapshots.py", "analysis.py",
-    )]
     for file in files:
         if not file.is_file() or any(p.is_symlink() for p in (file, *file.parents)):
             raise ValueError("Bundle inputs must be regular files, without symlinks")
     output = ROOT / "dist" / f"flin-gtm-mcp-{version}-macos.mcpb"
     output.parent.mkdir(exist_ok=True)
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
-        for file in sorted(files):
-            info = zipfile.ZipInfo(file.relative_to(ROOT).as_posix(), (2020, 1, 1, 0, 0, 0))
+        contents = {file.relative_to(ROOT).as_posix(): file.read_bytes() for file in files}
+        # A separate launcher project: never install the bundled application source.
+        contents["pyproject.toml"] = (
+            '[project]\nname = "flin-gtm-desktop-launcher"\n'
+            f'version = "{version}"\nrequires-python = ">=3.11"\n'
+            f'dependencies = ["flin-gtm-mcp>={version}"]\n'
+        ).encode()
+        for name, content in sorted(contents.items()):
+            info = zipfile.ZipInfo(name, (2020, 1, 1, 0, 0, 0))
             info.create_system = 3
             info.external_attr = 0o100644 << 16
             info.compress_type = zipfile.ZIP_DEFLATED
-            archive.writestr(info, file.read_bytes())
+            archive.writestr(info, content)
     with zipfile.ZipFile(output) as archive:
         assert archive.testzip() is None
     digest = hashlib.sha256(output.read_bytes()).hexdigest()
