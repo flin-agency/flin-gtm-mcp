@@ -2,35 +2,47 @@
 
 Read-only Google Tag Manager MCP server for Claude Desktop and other stdio MCP clients.
 
-## Install in Claude Desktop on macOS
+## Claude Desktop on Apple Silicon (M1 or newer)
 
-1. Use the locally built `dist/flin-gtm-mcp-0.2.3-macos.mcpb`, or [download the macOS installer](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.3/flin-gtm-mcp-0.2.3-macos.mcpb).
-2. Open the bundle with a current Claude Desktop version supporting MCPB v0.4 / uv extensions.
-3. Enter your Google **Desktop app** **OAuth client ID** and **OAuth client secret**
-   in the extension settings. The secret is a protected input field; no JSON file is required.
-4. Ask Claude to authenticate with flin Google Tag Manager, then complete Google's browser consent.
-5. Ask Claude to list your GTM accounts.
+1. **[Download flin-gtm-mcp.mcpb](https://github.com/flin-agency/flin-gtm-mcp/releases/latest/download/flin-gtm-mcp.mcpb)**
+   and open it with a current Claude Desktop version supporting MCPB v0.4 / uv.
+2. Install the extension. Enter **OAuth client ID** and **OAuth client secret** from
+   your administrator/password manager. They must belong to the same Google
+   **Desktop app** OAuth client. The secret field is sensitive; no JSON file is needed.
+3. Ask Claude: “Authenticate with flin Google Tag Manager using `gtm_authenticate`.”
+   Complete Google's browser consent using an account with GTM access.
+4. Ask: “Run `connection_status`, then `gtm_list_accounts`.” The first reports local
+   setup and the running server version without contacting Google. The second is
+   the live connection test; a successful empty list means no visible GTM accounts.
 
-The bundle is a small launcher. Each extension/server start uses Claude's uv runtime
-to fetch the newest stable `flin-gtm-mcp` release from PyPI. A running process keeps
-its version until Claude/the server restarts. Internet is required to check/install
-updates; no terminal command or new MCPB download is needed for server updates.
-Supports Apple Silicon and Intel through uv-managed Python.
+**Updates:** the current launcher automatically loads compatible stable **0.2.x**
+PyPI updates on restart (`>=0.2.4,<0.3.0`, no prereleases). Running sessions keep their
+version. Settings and tokens stay in place when the OAuth client ID is unchanged.
+The **extension version** identifies the installed starter/settings; **`server_version`**
+from `connection_status` identifies the process actually running. A stored token is
+`unknown`, not proof of live access; `live_access` stays `not_checked` in this local check.
+The existing `gtm_auth_status` tool also remains available and may refresh tokens.
 
-**Settings update:** install the 0.2.3 bundle once to get the two OAuth input fields.
-Existing 0.2.2 launchers still receive server updates using their selected JSON file.
-Older fixed-source bundles (up to 0.2.1) need a new bundle for automatic updates.
-Using the same OAuth client ID preserves the existing local token cache. The extension's displayed version
-is the launcher version; ask for `gtm_auth_status` to see `server_version`.
-Changes to extension settings, permissions or the launcher itself can still require
-a new MCPB installation. The server version updates automatically.
+**One-time import:** install the current bundle once to adopt the tested 0.2 compatibility
+boundary. Older 0.2.2/0.2.3 starters have no upper version limit; bundles up to 0.2.1 do
+not auto-update. Later starter/UI changes can also require a fresh import. Ordinary
+compatible server updates need only a restart. The boundary preserves the existing
+0.2 stdio, snapshot/pagination, OAuth-setting and token-storage interfaces; a new
+minor line must be reviewed before adoption.
 
-See [Claude setup and Google credentials](docs/claude-desktop.md) and the
-[0.2.1 security review](docs/security-review.md).
+Internet is needed for normal startup/update checks. If PyPI is unavailable, retain
+the installation and use the documented [existing-environment fallback](SUPPORT.md#existing-installation-fallback)
+with administrator help. There is no silent automatic offline fallback.
+Intel Mac support is retained; manual Python/stdio use also supports Linux.
+[Versioned packages and SHA-256 files](https://github.com/flin-agency/flin-gtm-mcp/releases)
+remain available alongside the stable download name.
+
+[Google setup and manual configuration](docs/claude-desktop.md) · [Privacy](PRIVACY.md)
+· [Security](SECURITY.md) · [Support](SUPPORT.md)
 
 ## Features
 
-34 tools cover authentication, accounts, containers, workspaces, tags, triggers,
+35 tools cover authentication, accounts, containers, workspaces, tags, triggers,
 variables, folders, built-ins, version headers and versions, plus:
 
 - Public-ID lookup, workspace status and paginated folder contents.
@@ -116,7 +128,10 @@ npx --yes @anthropic-ai/mcpb@2.1.2 validate manifest.json
 The MCPB builder includes only explicit project files, never `.env`, local credentials,
 tokens, virtual environments or Git metadata. SHA-256 accompanies the bundle.
 CI runs tests and builds on macOS and Linux, including an unchanged installed
-launcher loading two successive package versions and rejecting a newer prerelease.
+launcher loading successive compatible packages with preserved settings/tokens and
+rejecting prereleases, the next minor line and a new major version. The offline
+existing-environment fallback is also exercised. Local macOS arm64 testing is distinct
+from Linux CI; neither replaces installation in Claude or a real Google account test.
 For a pre-publication bundle test, build a wheel and run
 `uv run python scripts/check_mcpb.py --wheel-dir dist`.
 
@@ -129,7 +144,7 @@ Every new version pushed to `main` runs **Release to PyPI and Claude Desktop**
 2. Run tests, security scans, builds and bundle startup on macOS and Linux.
 3. Publish the tested wheel/source to PyPI with Trusted Publishing.
 4. Verify PyPI file hashes and start the bundle using the public PyPI package.
-5. Publish the matching `.mcpb`, checksum, wheel and source archive on GitHub.
+5. Publish the matching versioned `.mcpb`, stable `flin-gtm-mcp.mcpb` alias, checksums, wheel and source archive on GitHub.
 
 For each release, bump `pyproject.toml`, `manifest.json` and
 `src/flin_gtm_mcp/__init__.py`, refresh `uv.lock` and update release notes.
@@ -146,15 +161,16 @@ is needed. Only wheel/source distributions go to PyPI; MCPB files go to GitHub.
 
 ## Privacy and limits
 
-Credentials stay on your computer; Google receives authentication and GTM API requests.
+Google receives OAuth credentials/tokens for authentication and GTM API requests.
+Local credential storage and removal are described in [PRIVACY.md](PRIVACY.md).
 Returned GTM configuration is shared with the MCP client and its model according to
 that client's settings. No flin telemetry or hosted proxy is used. OAuth tokens are
 stored in a per-client file with owner-only permissions, not in the macOS Keychain.
 Custom HTML and configuration strings are untrusted data and are never executed.
 The extension is unsigned. Real Google access requires your own credentials and consent.
 Automatic updates trust the stable releases published by this project on PyPI and
-resolve dependencies using the package constraints. The launcher deliberately does
-not freeze the application to the version it originally installed.
+resolve dependencies using the package constraints. The launcher deliberately accepts
+compatible stable 0.2.x updates within its explicit version boundary.
 
 [Google authorization reference](https://developers.google.com/tag-platform/tag-manager/api/v2/authorization)
 · [Read-only contract](docs/read-only-contract.md)

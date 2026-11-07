@@ -31,7 +31,8 @@ def main():
         release = json.loads(result.stdout)
         if release['draft']:
             raise RuntimeError('An existing draft must be resolved before automated publication')
-        required = {f'flin-gtm-mcp-{version}-macos.mcpb',
+        required = {'flin-gtm-mcp.mcpb', 'flin-gtm-mcp.mcpb.sha256',
+                    f'flin-gtm-mcp-{version}-macos.mcpb',
                     f'flin-gtm-mcp-{version}-macos.mcpb.sha256',
                     f'flin_gtm_mcp-{version}-py3-none-any.whl',
                     f'flin_gtm_mcp-{version}.tar.gz'}

@@ -126,4 +126,4 @@ jobs:
           GH_REPO: ${{ github.repository }}
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          gh release create "v$VERSION" "dist/flin_gtm_mcp-$VERSION-py3-none-any.whl" "dist/flin_gtm_mcp-$VERSION.tar.gz" "dist/flin-gtm-mcp-$VERSION-macos.mcpb" "dist/flin-gtm-mcp-$VERSION-macos.mcpb.sha256" --target "$GITHUB_SHA" --title "flin GTM MCP v$VERSION" --notes-file docs/release-notes.md
+          gh release create "v$VERSION" "dist/flin_gtm_mcp-$VERSION-py3-none-any.whl" "dist/flin_gtm_mcp-$VERSION.tar.gz" "dist/flin-gtm-mcp-$VERSION-macos.mcpb" "dist/flin-gtm-mcp-$VERSION-macos.mcpb.sha256" "dist/flin-gtm-mcp.mcpb" "dist/flin-gtm-mcp.mcpb.sha256" --target "$GITHUB_SHA" --title "flin GTM MCP v$VERSION" --notes-file docs/release-notes.md

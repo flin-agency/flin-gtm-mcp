@@ -7,6 +7,9 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# 0.2 snapshot/pagination responses, stdio entry point, OAuth settings and token layout.
+# Reassess these interfaces before allowing a new minor line in this launcher.
+SERVER_UPPER_BOUND = "0.3.0"
 
 
 def build():
@@ -15,12 +18,17 @@ def build():
     version = metadata["project"]["version"]
     if version != manifest["version"]:
         raise ValueError("Manifest/package versions differ")
+    if not version.startswith("0.2."):
+        raise ValueError("Review launcher compatibility before changing the server minor version")
     files = [
         ROOT / name
         for name in (
             "manifest.json",
             "server.py",
             "README.md",
+            "PRIVACY.md",
+            "SECURITY.md",
+            "SUPPORT.md",
             "docs/claude-desktop.md",
             "docs/read-only-contract.md",
             "docs/release-notes.md",
@@ -38,7 +46,7 @@ def build():
         contents["pyproject.toml"] = (
             '[project]\nname = "flin-gtm-desktop-launcher"\n'
             f'version = "{version}"\nrequires-python = ">=3.11"\n'
-            f'dependencies = ["flin-gtm-mcp>={version}"]\n'
+            f'dependencies = ["flin-gtm-mcp>={version},<{SERVER_UPPER_BOUND}"]\n'
         ).encode()
         for name, content in sorted(contents.items()):
             info = zipfile.ZipInfo(name, (2020, 1, 1, 0, 0, 0))
@@ -50,6 +58,9 @@ def build():
         assert archive.testzip() is None
     digest = hashlib.sha256(output.read_bytes()).hexdigest()
     output.with_suffix(".mcpb.sha256").write_text(f"{digest}  {output.name}\n")
+    alias = output.parent / "flin-gtm-mcp.mcpb"
+    alias.write_bytes(output.read_bytes())
+    alias.with_suffix(".mcpb.sha256").write_text(f"{digest}  {alias.name}\n")
     print(output)
 
 

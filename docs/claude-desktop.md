@@ -6,9 +6,9 @@
 2. Configure Google Auth Platform / OAuth consent. For an external app in Testing,
    add your Google account as a test user. Follow Google's current verification
    requirements if distributing your OAuth app beyond permitted test users.
-3. Create an OAuth client of type **Desktop app**. Copy its client ID and client secret.
+3. Create an OAuth client of type **Desktop app**. Obtain its client ID and client secret from the responsible administrator/password manager.
 4. Enter them in the extension settings under **OAuth client ID** and **OAuth client secret**.
-   No JSON download is necessary. The secret field is marked sensitive for Claude secure storage.
+   No JSON download is necessary. The secret field is marked sensitive; Claude manages the setting storage.
 5. Use `gtm_authenticate` in Claude to open browser consent. The login waits up to
    120 seconds. If Claude times out first, use the CLI login below and retry.
 
@@ -18,12 +18,12 @@ created automatically. Google OAuth apps in Testing may require frequent re-logi
 
 ## Install the MCPB
 
-Download [flin-gtm-mcp-0.2.3-macos.mcpb](https://github.com/flin-agency/flin-gtm-mcp/releases/download/v0.2.3/flin-gtm-mcp-0.2.3-macos.mcpb).
+Download [flin-gtm-mcp.mcpb](https://github.com/flin-agency/flin-gtm-mcp/releases/latest/download/flin-gtm-mcp.mcpb).
 In Claude Desktop, open **Settings → Desktop app → Extensions → Manage →
 Advanced settings → Install Extension…** (older layout: **Settings → Extensions**).
 Select the downloaded file. Approve installation and
 enter the OAuth client ID and client secret. Claude manages Python with uv. On every
-server start it checks PyPI for the newest stable flin-gtm-mcp version and updates its isolated environment. Internet is required.
+server start it checks PyPI for the newest compatible stable flin-gtm-mcp 0.2.x version (`>=0.2.4,<0.3.0`) and updates its isolated environment. Internet is required.
 New code becomes active after the next server/Claude restart. Credentials stay in
 the same location; a normal server update does not require reauthentication.
 
@@ -35,21 +35,32 @@ Then: “Zeige Tags und Trigger im Workspace …; ändere nichts.”
 
 ## Automatic updates and one-time migration
 
-Install 0.2.3 once to add the two OAuth input fields. This is an extension-settings
-change, so an existing 0.2.2 installation needs the new MCPB for the new form. Its
-JSON-based login continues to work through automatic server updates. Bundles up to
-0.2.1 execute fixed local source and also need a new bundle.
+Install the current 0.2.4 bundle once to adopt the explicit 0.2 compatibility boundary.
+The extension ID and OAuth field names are unchanged from 0.2.3. Earlier 0.2.2/0.2.3
+launchers auto-update without an upper bound; 0.2.2 uses a JSON file and needs a new
+import for the direct OAuth fields. Bundles up to 0.2.1 execute fixed local source.
+Keep the same OAuth client ID to retain the token cache; legacy JSON remains supported.
 
-Ordinary server updates still come from PyPI at startup without reinstalling the
-extension. No hot replacement happens during a running conversation. The extension's
-displayed version stays at the launcher version; `gtm_auth_status` reports the active
-`server_version`. Reusing the same OAuth client ID keeps the existing token cache.
+Ordinary compatible server updates come from PyPI at startup, without replacing a
+running conversation. The extension's version identifies the starter/settings;
+`connection_status.server_version` reports the actual process version. Changes to
+extension settings or the starter can require a new MCPB import. The 0.2 interface
+boundary covers stdio entry point, snapshot and pagination responses, direct/legacy
+OAuth configuration and token paths. A different minor/major line requires review;
+prereleases are excluded.
 
-Changes to the extension manifest, settings or launcher can still require a new
-MCPB. Custom side-loaded extension metadata does not itself update from PyPI.
-The PyPI project is fixed to flin-gtm-mcp and the official HTTPS index. Stable
-versions only; release candidates are excluded. Network failure may prevent startup
-until PyPI is reachable; the launcher does not silently fall back to bundled old code.
+`connection_status` reads only local configuration/token presence: no browser, token
+refresh, Google request or filesystem write. An existing token or service account
+returns `auth_status: unknown`, because it has not been live-verified. Its
+`live_access` is always `not_checked`. `gtm_auth_status` retains its original fields
+and behavior, including possible token refresh. To actually check access, call
+`gtm_list_accounts` after explicit login. A successful empty list means no accounts
+are visible to that identity; a denied request is not successful live access.
+
+Normal startup needs PyPI connectivity. There is no silent offline fallback; see
+[the existing-environment fallback](../SUPPORT.md#existing-installation-fallback).
+Neither restart nor server update deletes credentials/settings. Real browser consent
+and Claude's settings/import UI need a user account and are not automated test claims.
 
 ## Manual stdio setup / CLI login
 
@@ -90,7 +101,8 @@ Never paste client secrets or token files into chat.
 ## Authentication storage and removal
 
 On macOS, OAuth tokens are stored under
-`~/Library/Application Support/flin-gtm-mcp/token-<client-hash>.json` with mode `0600`.
+`~/Library/Application Support/flin-gtm-mcp/token-<client-hash>.json` with mode `0600` in a `0700` directory. These JSON files also contain OAuth client
+details and are not encrypted by this server. Linux uses `~/.config/flin-gtm-mcp/`.
 Each OAuth client has a separate cache; logging in again replaces that client's account.
 To switch Google accounts, run login again and choose the desired account in Google.
 To remove access, revoke the app in your Google account's third-party access settings,

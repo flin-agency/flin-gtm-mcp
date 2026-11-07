@@ -1,3 +1,23 @@
+# 0.2.4 — Consistent desktop setup and local connection status
+
+- Add `connection_status`: actual server version, configured/incomplete, local auth
+  state, `live_access: not_checked` and a concrete next step. No refresh, browser,
+  API call or filesystem writes. Tokens imply `unknown`, never live authentication.
+  Existing `gtm_auth_status` and all GTM tools remain backward compatible (35 total).
+- Keep direct OAuth client ID/secret settings, sensitive secret and legacy JSON.
+  Same client ID preserves tokens across server updates and bundle migration.
+- Bound this launcher to stable `>=0.2.4,<0.3.0`, preserving the 0.2 interfaces;
+  unchanged installations are tested against successive versions, out-of-range
+  releases and prereleases with real uv. Updates apply on restart only.
+- Add the byte-identical `flin-gtm-mcp.mcpb` alias and SHA-256 alongside versioned
+  packages; PyPI publication and public-package checks still precede GitHub release.
+- Simplify Apple Silicon onboarding, add privacy/security/support pages and document
+  an explicit installed-environment fallback when PyPI is unreachable.
+
+Import this bundle once for the compatibility boundary. Subsequent compatible server
+updates need only a restart. The bundle remains unsigned. macOS arm64 and Linux
+checks do not substitute for real Claude import/browser consent/customer-account tests.
+
 # 0.2.3 — Enter OAuth client ID and secret directly
 
 - Claude extension settings now show **OAuth client ID** and **OAuth client secret**,

@@ -48,17 +48,27 @@ async def check(wheel_dir=None, expected_version=None):
             command=shutil.which("uv"),
             args=args,
             env=env,
+            cwd=directory,
         )
         async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
             await session.initialize()
-            assert len((await session.list_tools()).tools) == 34
+            assert len((await session.list_tools()).tools) == 35
+            local = await session.call_tool("connection_status", {})
+            state = local.structuredContent or json.loads(local.content[0].text)
+            assert not local.isError
+            assert state["server_version"] == (expected_version or version)
+            assert state["configuration_status"] == "configured"
+            assert state["auth_status"] == "unauthenticated"
+            assert state["live_access"] == "not_checked"
+            assert not list(home.rglob("token-*.json"))
+            assert values["client_secret"] not in json.dumps(state)
             result = await session.call_tool("gtm_auth_status", {})
             assert not result.isError
             status = result.structuredContent or json.loads(result.content[0].text)
             assert status["server_version"] == (expected_version or version)
             assert not status["authenticated"] and "login missing" in status["message"]
             assert values["client_secret"] not in json.dumps(status)
-    print("Archived MCPB: isolated uv launch, handshake and 34 tools verified.")
+    print("Archived MCPB: isolated uv launch, handshake and 35 tools verified.")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,10 @@
+import json
 import sys
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+
+from flin_gtm_mcp import __version__
 
 
 async def test_real_stdio_handshake_tools_and_validation():
@@ -13,7 +16,7 @@ async def test_real_stdio_handshake_tools_and_validation():
         await session.initialize()
         response = await session.list_tools()
         tools = {tool.name: tool for tool in response.tools}
-        assert len(tools) == 34
+        assert len(tools) == 35
         assert "gtm_get_live_version" in tools
         for name, tool in tools.items():
             assert tool.annotations.destructiveHint is False
@@ -22,6 +25,12 @@ async def test_real_stdio_handshake_tools_and_validation():
         assert all(
             not any(x in name for x in ("publish", "delete", "update", "create")) for name in tools
         )
+        local = await session.call_tool("connection_status", {})
+        assert not local.isError
+        state = local.structuredContent or json.loads(local.content[0].text)
+        assert state["server_version"] == __version__
+        assert state["configuration_status"] == "incomplete"
+        assert state["live_access"] == "not_checked"
         status = await session.call_tool("gtm_auth_status", {})
         assert not status.isError
         bad = await session.call_tool("gtm_get_tag", {"path": "https://evil.example"})

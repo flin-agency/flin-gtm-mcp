@@ -220,3 +220,43 @@ def status() -> dict:
         return {"authenticated": True, "scope": SCOPE}
     except AuthError as exc:
         return {"authenticated": False, "message": str(exc), "scope": SCOPE}
+
+
+def connection_status() -> dict:
+    """Local inspection only: no token refresh, browser, API call or filesystem writes."""
+    from . import __version__
+
+    result = {
+        "server_version": __version__,
+        "configuration_status": "incomplete",
+        "auth_status": "unauthenticated",
+        "live_access": "not_checked",
+        "next_step": "Enter both OAuth client ID and client secret in the extension settings; "
+                     "for legacy configuration, check the credentials JSON file.",
+    }
+    try:
+        data = config()
+        if data.get("type") == "service_account":
+            # Parse the key locally; constructing credentials does not obtain an access token.
+            service_account.Credentials.from_service_account_info(data, scopes=SCOPES)
+            result.update(configuration_status="configured", auth_status="unknown",
+                          next_step="Call gtm_list_accounts to check live Google access.")
+            return result
+    except Exception:  # noqa: BLE001 -- never expose credential-bearing parser errors
+        return result
+    result["configuration_status"] = "configured"
+    try:
+        # Merely inspect presence: read_token/credentials would chmod, create dirs or refresh.
+        token_file(data).lstat()
+    except FileNotFoundError:
+        result["next_step"] = "Request gtm_authenticate, complete Google consent, then " \
+                              "call gtm_list_accounts to check live access."
+        return result
+    except OSError:
+        result.update(auth_status="unknown",
+                      next_step="Check local token cache access, then request gtm_authenticate.")
+        return result
+    result.update(auth_status="unknown",
+                  next_step="Local login data is present but unverified. Call gtm_list_accounts "
+                            "to check live access; reconnect with gtm_authenticate if required.")
+    return result

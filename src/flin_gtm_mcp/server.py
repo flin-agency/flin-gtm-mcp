@@ -30,6 +30,16 @@ def safe_call(fn, *args):
 
 
 @mcp.tool(annotations=READ)
+def connection_status() -> dict:
+    """Report running version and local setup; no refresh, browser or live Google check.
+
+    A local token is unverified (auth_status=unknown). Use gtm_list_accounts for a
+    separate live read. Existing gtm_auth_status remains available and may refresh tokens.
+    """
+    return auth.connection_status()
+
+
+@mcp.tool(annotations=READ)
 def gtm_auth_status() -> dict:
     """Check Google authentication without opening a browser. May refresh an existing token."""
     return {**auth.status(), "server_version": __version__}

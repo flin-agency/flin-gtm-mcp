@@ -101,3 +101,33 @@ use the validated client ID/token/service-account identity instead of requiring 
 credential-file path. Tests exercise inline login, JSON compatibility, account/cache
 isolation and startup from the actual bundle using synthetic settings and a temporary
 home directory; no real OAuth secrets are used or sent to Google during these tests.
+
+## 0.2.4 local status and compatible desktop updates
+
+`connection_status` adds a local-only check without calling the existing refresh-capable
+`gtm_auth_status`. It reports token presence as `unknown` and live access as
+`not_checked`; errors contain no parsed credential material. Existing authentication,
+read-only GTM boundaries and token naming are unchanged.
+
+The new launcher accepts stable `>=0.2.4,<0.3.0` packages. The explicit minor boundary
+protects the current stdio entry point, snapshot/pagination response shapes, direct
+and legacy OAuth configuration, and token storage. A new minor line needs review.
+Existing 0.2.2/0.2.3 launchers lack this upper bound and need a one-time bundle import.
+Versioned artifacts are retained; the new stable alias has identical bundle bytes.
+
+Local checks on an Apple Silicon Mac (Darwin arm64): 70 tests passed, Ruff and Bandit
+passed, dependency auditing reported no known vulnerabilities, wheel/source metadata
+passed strict validation, the official MCPB validator accepted the manifest, and the
+extracted bundle started outside the source tree with 35 tools using real uv/Python.
+An unchanged launcher was tested with successive synthetic versions, preserved
+settings/token bytes, rejected prerelease/next-minor/major candidates, and the explicit
+offline existing-environment fallback.
+
+A separate real-package migration test started the published 0.2.3 bundle and PyPI
+server, then made the actual 0.2.4 release wheel available. The existing session stayed
+on 0.2.3; the next start loaded 0.2.4 without changing launcher files, OAuth settings
+or the synthetic token. This tests local compatibility, not a live Google account.
+Linux/macOS release CI and the post-publication public-PyPI smoke check are separate
+release gates. Claude's import/settings UI and real customer consent/API access were
+not exercised locally. No claim of automatic offline recovery or Keychain encryption
+is made; see the root privacy/security/support documents for storage and recovery.
